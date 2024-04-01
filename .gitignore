@@ -162,3 +162,5 @@ cython_debug/
 # Project relevant ignores
 *.DS_Store
 data/*
+.vscode/settings.json
+models/*
