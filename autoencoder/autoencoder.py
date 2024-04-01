@@ -24,6 +24,7 @@ class Autoencoder(torch.nn.Module, ABC):
         latent_dim=2,
         reconstruction_loss_function=torch.nn.MSELoss(),
         device=None,
+        name_extras=None,
     ):
         super().__init__()
         self.input_shape = input_shape
@@ -33,7 +34,7 @@ class Autoencoder(torch.nn.Module, ABC):
         self.history = {"tr_re": [], "val_re": []}
         self.latent_dim = latent_dim
         self.best_loss = float("inf")
-        _ = self._make_model_name(extras=None)
+        _ = self._make_model_name(extras=name_extras)
         self._create_model_folder(folder=None)
         if device is None:
             self.get_device()
@@ -69,7 +70,7 @@ class Autoencoder(torch.nn.Module, ABC):
         latent_space = self.latent_dim
         model_name = f"{time_string}_Lat{latent_space}"
         if extras is not None:
-            model_name = f"model_name_{extras}"
+            model_name = f"{model_name}_{extras}"
         self.model_name = model_name
         return self.model_name
 
@@ -225,6 +226,7 @@ class Autoencoder(torch.nn.Module, ABC):
         with open(summary_path, "w") as f:
             with redirect_stdout(f):
                 torchsummary.summary(self.to(self.device), input_size=self.input_shape)
+            print(self, file=f)
 
     def store(self, save_path=None):
         if save_path is None:
