@@ -3,56 +3,102 @@
 import autoencoder.contractive as cae
 from dataloaders import get_loaders
 from maker.mlp import MLP_model
+from reporting import append_to_json
 
-# %%
-# Make data loaders
-batch_size = 64
-train_loader, valid_loader, test_loader = get_loaders(batch_size=batch_size)
-# Find the input shape
-inputs, targets = next(iter(train_loader))
-input_shape = inputs.shape[1:]  # Remove batch size
 
-# %%
-# Define and make model parts
-enc_dims = [128, 64, 32]
-latent_dimension = 5
-model_maker = MLP_model(
-    input_shape,
+def make_check_model(
     enc_dims,
-    latent_dim=latent_dimension,
-)
-encoder, decoder = model_maker.make()
+    latent_dimension,
+    model_type,
+    lambda_c,
+    learning_rate,
+    epochs=30,
+    name_extras="NN",
+    batch_size=64,
+):
+    meta_report = {
+        "enc_dims": enc_dims,
+        "lambda_c": lambda_c,
+        "learning_rate": learning_rate,
+        "epochs": epochs,
+        "batch_size": batch_size,
+    }
+    # Make data loaders
+    train_loader, valid_loader, test_loader = get_loaders(batch_size=batch_size)
+    # Find the input shape
+    inputs, _ = next(iter(train_loader))
+    input_shape = inputs.shape[1:]  # Remove batch size
 
-# %%
-lambda_c = 0.5
-name_extras = f"lc{lambda_c:.2f}_b{batch_size}"
-# Make the model
-model = cae.CAE(
-    input_shape=input_shape,
-    encoder=encoder,
-    decoder=decoder,
-    latent_dim=latent_dimension,
-    lambda_c=lambda_c,
-    name_extras=name_extras,
-)
+    # %%
+    # Define and make model parts
+    model_maker = MLP_model(
+        input_shape,
+        enc_dims,
+        latent_dim=latent_dimension,
+    )
+    encoder, decoder = model_maker.make()
 
-# %%
-# Train the model
-epochs = 1
-print(model)
-# model.summary()
-model.store_summary()
-# model_history = model.fit(
-#     train_loader, val_loader=valid_loader, epochs=epochs, lr=0.002
-# )
-# model.plot_training_history(store=True)
+    # %%
+    # Make the model
+    model = cae.CAE(
+        input_shape=input_shape,
+        encoder=encoder,
+        decoder=decoder,
+        latent_dim=latent_dimension,
+        lambda_c=lambda_c,
+        name_extras=name_extras,
+        model_type=model_type,
+    )
 
-# # %%
-# # Evaluate the model
-# # load the best performing epoch
-# model.load_checkpoint()
-# model.present_latent(valid_loader, store=True)
-# # Store the best model
-# model.store()
-# # Visualize the reconstruction of test data
-# model.visualize_reconstructions(test_loader)
+    # %%
+    # Train the model
+    # model.summary()
+    model.store_summary()
+    _ = model.fit(
+        train_loader, val_loader=valid_loader, epochs=epochs, lr=learning_rate
+    )
+    model.plot_training_history(store=True, show_plot=False)
+    model.save_train_history()
+
+    # %%
+    # Evaluate the model
+    # load the best performing epoch
+    model.load_checkpoint()
+    model.present_latent(valid_loader, store=True, show_plot=False)
+    # Store the best model
+    model.store()
+    # Visualize the reconstruction of test data
+    model.visualize_reconstructions(test_loader, store=True, show_plot=False)
+    # get report data
+    model_report = model.make_report()
+    # %%
+    # store reports
+    report = meta_report | model_report
+    append_to_json("./models/meta_report.json", report)
+
+
+if __name__ == "__main__":
+    # User settings
+    batch_size = 64
+    layer_dimensions = [
+        [256, 128, 64, 32, 16],
+        [256, 256, 128, 128, 64, 64, 32, 32, 16, 16],
+    ]
+    model_type = "MLP"
+    latent_dimensions = [2, 3, 5, 8, 10, 12, 16]
+    lambda_c = 0.5
+    learning_rate = 0.002
+    epochs = 30
+    for latent_dim in latent_dimensions:
+        for enc_dims in layer_dimensions:
+            name_extras = f"ly{len(enc_dims)}_lc{lambda_c:.3f}_bs{batch_size}_lr{learning_rate:.4f}"
+            make_check_model(
+                enc_dims,
+                latent_dim,
+                model_type,
+                lambda_c,
+                learning_rate,
+                epochs=epochs,
+                name_extras=name_extras,
+                batch_size=batch_size,
+            )

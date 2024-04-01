@@ -37,6 +37,7 @@ class CAE(Autoencoder):
         lambda_c=0.01,
         device=None,
         name_extras=None,
+        model_type="NN",
     ):
         super().__init__()
         assert latent_dim > 0
@@ -46,9 +47,10 @@ class CAE(Autoencoder):
         self.reconstruction_loss_function = reconstruction_loss_function
         self.loss_function = torch.nn.MSELoss()
         self.history = {"tr_loss": [], "tr_re": [], "val_re": []}
-        self.latent_dim = 5
+        self.latent_dim = latent_dim
         self.lambda_c = lambda_c
         self.best_loss = float("inf")
+        self.model_type = f"CAE_{model_type}"  # Should be before name maker
         _ = self._make_model_name(extras=name_extras)
         self._create_model_folder(folder=None)
         if device is None:

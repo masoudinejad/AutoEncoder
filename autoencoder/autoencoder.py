@@ -1,3 +1,4 @@
+import json
 import os
 from abc import ABC, abstractmethod
 from contextlib import redirect_stdout
@@ -15,31 +16,34 @@ from tqdm import tqdm
 
 
 class Autoencoder(torch.nn.Module, ABC):
-    @abstractmethod
-    def __init__(
-        self,
-        input_shape=None,
-        encoder=None,
-        decoder=None,
-        latent_dim=2,
-        reconstruction_loss_function=torch.nn.MSELoss(),
-        device=None,
-        name_extras=None,
-    ):
-        super().__init__()
-        self.input_shape = input_shape
-        self.encoder = encoder
-        self.decoder = decoder
-        self.reconstruction_loss_function = reconstruction_loss_function
-        self.history = {"tr_re": [], "val_re": []}
-        self.latent_dim = latent_dim
-        self.best_loss = float("inf")
-        _ = self._make_model_name(extras=name_extras)
-        self._create_model_folder(folder=None)
-        if device is None:
-            self.get_device()
-        else:
-            self.device = device
+    # @abstractmethod
+    # def __init__(
+    #     self,
+    #     input_shape=None,
+    #     encoder=None,
+    #     decoder=None,
+    #     latent_dim=2,
+    #     reconstruction_loss_function=torch.nn.MSELoss(),
+    #     device=None,
+    #     name_extras=None,
+    #     model_type="NN",
+    # ):
+    #     super().__init__()
+    #     self.input_shape = input_shape
+    #     self.encoder = encoder
+    #     self.decoder = decoder
+    #     self.reconstruction_loss_function = reconstruction_loss_function
+    #     self.history = {"tr_re": [], "val_re": []}
+    #     self.latent_dim = latent_dim
+    #     self.best_loss = float("inf")
+    #     self.model_type = f"AE_{model_type}"  # Should be before name maker
+    #     _ = self._make_model_name(extras=name_extras)
+    #     print("ae")
+    #     self._create_model_folder(folder=None)
+    #     if device is None:
+    #         self.get_device()
+    #     else:
+    #         self.device = device
 
     def forward(self, x):
         encoded = self.encoder(x)
@@ -63,12 +67,13 @@ class Autoencoder(torch.nn.Module, ABC):
         self.storage_path = os.path.join(models_folder, self.model_name)
         if not os.path.exists(self.storage_path):
             os.makedirs(self.storage_path)
+            # print(f"folder made at {self.storage_path}")
 
     def _make_model_name(self, extras=None):
         current_time = datetime.now()
         time_string = current_time.strftime("%Y%m%d_%H%M")
         latent_space = self.latent_dim
-        model_name = f"{time_string}_Lat{latent_space}"
+        model_name = f"{time_string}_{self.model_type}_Lat{latent_space}"
         if extras is not None:
             model_name = f"{model_name}_{extras}"
         self.model_name = model_name
@@ -137,6 +142,14 @@ class Autoencoder(torch.nn.Module, ABC):
                 self.best_loss = reconstruction_error  # Update best loss
                 self.save_checkpoint(optimizer, self.best_loss)
         return self.history
+
+    def save_train_history(self):
+        # Convert the dictionary to a JSON string
+        dict_json = json.dumps(self.history, indent=4)  # 'indent' for pretty-printing
+        history_path = os.path.join(self.storage_path, "train_history.json")
+        # Write the JSON string to a file
+        with open(history_path, "w") as file:
+            file.write(dict_json)
 
     def save_checkpoint(self, optimizer, loss, path=None):
         """Save model checkpoint."""
@@ -251,9 +264,9 @@ class Autoencoder(torch.nn.Module, ABC):
 
                 for label in unique_labels:
                     fig, axs = plt.subplots(
-                        2, (labels == label).sum().item(), figsize=(10, 2)
+                        2, (labels == label).sum().item(), figsize=(10, 3)
                     )
-                    # fig.suptitle(f"Grade {1+label.item()}")
+                    fig.suptitle(f"Grade {1+label.item()}")
 
                     # Filter images and reconstructions by class
                     class_images = data[labels == label]
@@ -282,3 +295,13 @@ class Autoencoder(torch.nn.Module, ABC):
                         plt.savefig(plot_path, format="svg")
                     if show_plot:
                         plt.show()
+
+    def make_report(self):
+        report = {
+            "name": self.model_name,
+            "type": self.model_type,
+            "input_shape": self.input_shape,
+            "latent_dim": self.latent_dim,
+            "best_loss": self.best_loss,
+        }
+        return report
