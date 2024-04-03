@@ -59,7 +59,9 @@ class CAE(Autoencoder):
             self.device = device
 
     def fit(self, train_loader, val_loader=None, epochs=10, device=None, lr=1e-3):
-        if device is not None:
+        if device is None:
+            self.get_device()
+        else:
             self.device = device
         self.to(self.device)
         optimizer = torch.optim.Adam(self.parameters(), lr=lr)
@@ -74,7 +76,7 @@ class CAE(Autoencoder):
             progress_bar = tqdm(range(n_tr_batches), total=n_tr_batches, ncols=100)
             progress_bar.set_description(f"Epoch [{epoch + 1}/{epochs}]")
             for data, _ in train_loader:
-                data = data.to(device)
+                data = data.to(self.device)
                 # Require gradients for input
                 data.requires_grad_()
                 # Zero the parameter gradients

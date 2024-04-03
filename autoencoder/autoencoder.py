@@ -57,8 +57,8 @@ class Autoencoder(torch.nn.Module, ABC):
     def get_device(self):
         if torch.cuda.is_available():
             device = torch.device("cuda:0")
-        # elif torch.backends.mps.is_available():
-        #     device = torch.device("mps")
+        elif torch.backends.mps.is_available():
+            device = torch.device("mps")
         else:
             device = torch.device("cpu")
         self.device = device
@@ -84,6 +84,7 @@ class Autoencoder(torch.nn.Module, ABC):
         return self.model_name
 
     def evaluate(self, eval_loader):
+        self.to(self.device)
         self.eval()  # Set the model to evaluation mode
         eval_loss = 0.0
         for eval_data, _ in eval_loader:
@@ -116,7 +117,7 @@ class Autoencoder(torch.nn.Module, ABC):
             progress_bar = tqdm(range(n_tr_batches), total=n_tr_batches, ncols=100)
             progress_bar.set_description(f"Epoch [{epoch + 1}/{epochs}]")
             for data, _ in train_loader:
-                data = data.to(device)
+                data = data.to(self.device)
                 optimizer.zero_grad()  # Zero the parameter gradients
                 _, decoded = self(data)  # Forward pass
                 loss = self.reconstruction_loss_function(data, decoded)
@@ -231,7 +232,8 @@ class Autoencoder(torch.nn.Module, ABC):
 
     def summary(self):
         self.get_device()
-        torchsummary.summary(self.to(self.device), input_size=self.input_shape)
+        torchsummary.summary(self, input_size=self.input_shape)
+        # torchsummary.summary(self.to(self.device), input_size=self.input_shape)
 
     def store_summary(self, save_path=None):
         if save_path is None:
@@ -242,7 +244,8 @@ class Autoencoder(torch.nn.Module, ABC):
         # Redirect the summary output to a text file
         with open(summary_path, "w") as f:
             with redirect_stdout(f):
-                torchsummary.summary(self.to(self.device), input_size=self.input_shape)
+                torchsummary.summary(self, input_size=self.input_shape)
+                # torchsummary.summary(self.to(self.device), input_size=self.input_shape)
             print(self, file=f)
 
     def store(self, save_path=None):
