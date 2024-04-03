@@ -87,7 +87,7 @@ if __name__ == "__main__":
         [256, 256, 128, 128, 64, 64, 32, 32, 16, 16],
     ]
     model_type = "CNN"
-    latent_dimensions = [2, 3, 5, 8, 10, 12, 16]
+    latent_dimensions = [5, 10, 16]
     lambda_c = 0.5
     learning_rate = 0.002
     epochs = 30
