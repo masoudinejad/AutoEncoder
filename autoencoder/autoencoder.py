@@ -14,6 +14,10 @@ import torchsummary
 from matplotlib.ticker import MaxNLocator
 from tqdm import tqdm
 
+# class (torch.nn.Module, ABC):
+#     @abstractmethod
+#     def __init__(slef, )
+
 
 class Autoencoder(torch.nn.Module, ABC):
     # @abstractmethod
