@@ -1,0 +1,19 @@
+# run: conda env create --file environment.yml
+name: AutoEncoder
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.11
+  - ipykernel
+  - matplotlib
+  - pandas
+  - numpy
+  - seaborn
+  - tqdm
+  - pytorch::pytorch
+  - pytorch::torchvision 
+  - pytorch::torchaudio
+  - pip
+  - pip:
+    - torchsummary
